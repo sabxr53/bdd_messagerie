@@ -26,3 +26,15 @@ def recherche_lineaire(liste, valeur):
             return i
 
     return -1
+
+#fonction de hachage 
+
+def fonction_hachage(username, taille_table):
+
+    valeur = 0
+
+    for caractere in username:
+
+        valeur += ord(caractere)
+
+    return valeur % taille_table

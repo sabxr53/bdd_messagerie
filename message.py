@@ -15,7 +15,7 @@ class Message:
         self.destinataire = destinataire
         self.contenu = contenu
         self.heure = heure
-        self.lu = lu
+        self.lu = bool(lu)
         self.reponse_a = reponse_a
 
     def marquer_comme_lu(self):
