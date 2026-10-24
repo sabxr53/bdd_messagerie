@@ -21,7 +21,7 @@ def creer_connexion():
 def creer_tables(connexion) : 
 
     connexion.execute("""
-        CREATE TABLE IF NOT EXISTS utilisateurs (
+        CREATE TABLE IF NOT EXISTS utilisateur (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL
@@ -119,7 +119,7 @@ def envoyer_message(
             sql,
             (
                 expediteur,
-                destinataire,
+                destinataire_id,
                 contenu,
                 heure,
                 reponse_a
