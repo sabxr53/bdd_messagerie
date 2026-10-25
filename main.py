@@ -225,9 +225,8 @@ if connexion is not None:
     choix = input("Choisissez une option : ")
     if choix == "1":
         creer_compte(connexion)
-        return 
 
-    else choix == "2":
+    elif choix == "2":
         afficher_utilisateurs(connexion)
 
         try :
