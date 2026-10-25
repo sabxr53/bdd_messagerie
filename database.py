@@ -119,7 +119,7 @@ def envoyer_message(
             sql,
             (
                 expediteur,
-                destinataire_id,
+                destinataire,
                 contenu,
                 heure,
                 reponse_a
@@ -142,22 +142,35 @@ def recuperer_boite_reception(
 
     sql = """
         SELECT
-            id,
-            expediteur,
-            destinataire,
-            contenu,
-            horodatage,
-            lu,
-            reponse_a
-        FROM message
-        WHERE destinataire = ?
-        ORDER BY horodatage DESC
+            m.id,
+            u.username,
+            m.destinataire,
+            m.contenu,
+            m.horodatage,
+            m.lu,
+            m.reponse_a
+        FROM message AS m
+        JOIN utilisateur AS u ON u.id = m.expediteur
+        WHERE m.destinataire = ?
+        ORDER BY m.horodatage DESC
     """
 
     return connexion.execute(
         sql,
         (utilisateur_id,)
     ).fetchall()
+
+
+def recuperer_expediteur_message(connexion, message_id, utilisateur_id):
+    sql = """
+        SELECT expediteur
+        FROM message
+        WHERE id = ? AND destinataire = ?
+    """
+    return connexion.execute(
+        sql, (message_id, utilisateur_id)
+    ).fetchone()
+
 
 
 def recuperer_messages_non_lus(
@@ -183,23 +196,17 @@ def recuperer_messages_non_lus(
     ).fetchall()
 
 
-def marquer_comme_lu(
-    connexion,
-    message_id
-):
 
+def marquer_comme_lu(connexion, message_id, utilisateur_id):
     sql = """
         UPDATE message
         SET lu = 1
-        WHERE id = ?
+        WHERE id = ? AND destinataire = ?
     """
 
-    connexion.execute(
-        sql,
-        (message_id,)
-    )
-
+    curseur = connexion.execute(sql, (message_id, utilisateur_id))
     connexion.commit()
+    return curseur.rowcount == 1
 
 
 #temps de reponse 
@@ -255,11 +262,13 @@ def temps_reponse_moyen(
         JOIN message AS r
             ON r.reponse_a = m.id
         WHERE m.destinataire = ?
+            AND r.expediteur = ?
+            AND r.destinataire = m.expediteur
     """
 
     resultats = connexion.execute(
         sql,
-        (utilisateur_id,)
+        (utilisateur_id, utilisateur_id)
     ).fetchall()
 
     if len(resultats) == 0:

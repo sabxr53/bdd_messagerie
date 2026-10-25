@@ -4,7 +4,7 @@ from database import (
     creer_utilisateur,
     recuperer_utilisateur,
     recuperer_tous_les_utilisateurs,
-    envoyer_message,
+    envoyer_message as envoyer_message_db,
     recuperer_boite_reception,
     recuperer_messages_non_lus,
     marquer_comme_lu,
@@ -35,8 +35,12 @@ def afficher_utilisateurs(connexion):
 
 
 def creer_compte(connexion) : 
-    username = input("Entrez un nom d'utilisateur : ")
-    email = input("Entrez un email : ")
+    username = input("Entrez un nom d'utilisateur : ").strip()
+    email = input("Entrez un email : ").strip()
+
+    if not username or not email:
+        print("Le nom d'utilisateur et l'email ne peuvent pas être vides.")
+        return None
 
     utilisateur = creer_utilisateur(connexion, username, email)
 
@@ -46,36 +50,54 @@ def creer_compte(connexion) :
             f"votre id est {utilisateur}" 
         )
 
-def envoyer_message(connexion, utilisateur) : 
-    
-    afficher_utilisateurs(connexion)
+def envoyer_message(connexion, utilisateur_id):
+    choix_reponse = input(
+        "ID du message auquel répondre (Entrée pour un nouveau message) : "
+    ).strip()
 
-    try : 
-        destinataire_id = int(
-            input("ID du destinataire : ")
+    reponse_a = None
+
+    if choix_reponse:
+        try:
+            reponse_a = int(choix_reponse)
+        except ValueError:
+            print("ID invalide.")
+            return
+
+        message_original = recuperer_expediteur_message(
+            connexion, reponse_a, utilisateur_id
         )
 
-    except ValueError :
-        print("ID invalide, l'id doit être un nombre")
+        if message_original is None:
+            print("Message introuvable dans votre boîte de réception.")
+            return
+
+        destinataire_id = message_original[0]
+    else:
+        afficher_utilisateurs(connexion)
+
+        try:
+            destinataire_id = int(input("ID du destinataire : "))
+        except ValueError:
+            print("ID invalide, l'id doit être un nombre.")
+            return
+
+    contenu = input("Entrez le message : ").strip()
+
+    if not contenu:
+        print("Le message ne peut pas être vide.")
         return
 
-    contenu = input("Entrez le message : ")
-
-    if contenu.strip() == "" : 
-        print("Le message ne peut pas être vide")
-        return
-
-    message_id = envoyer_message(
-        connexion, 
-        utilisateur, 
-        destinataire_id, 
-        contenu
+    message_id = envoyer_message_db(
+        connexion,
+        utilisateur_id,
+        destinataire_id,
+        contenu,
+        reponse_a
     )
-    
-    if message_id is not None : 
-        print(
-            f"Message envoyé avec succès ! ID : {message_id}" 
-        )
+
+    if message_id is not None:
+        print(f"Message envoyé avec succès ! ID : {message_id}")
 
 
 
@@ -125,7 +147,7 @@ def afficher_messages_non_lus(connexion, utilisateur_id) :
             f"Horodatage : {message[3]}"
         )
 
-def lire_message(connexion):
+def lire_message(connexion, utilisateur_id) :
 
     try:
 
@@ -138,12 +160,10 @@ def lire_message(connexion):
         print("ID invalide.")
         return
 
-    marquer_comme_lu(
-        connexion,
-        message_id
-    )
-
-    print("Message marqué comme lu.")
+    if marquer_comme_lu(connexion, message_id, utilisateur_id):
+        print("Message marqué comme lu.")
+    else:
+        print("Message introuvable dans votre boîte de réception.")
 
 
 def menu(connexion, utilisateur_id) : 
@@ -173,7 +193,7 @@ def menu(connexion, utilisateur_id) :
             afficher_messages_non_lus(connexion, utilisateur_id)
 
         elif choix == "5" :
-            lire_message(connexion)
+            lire_message(connexion, utilisateur_id)
 
         elif choix == "6" :
             moyenne = temps_reponse_moyen(connexion, utilisateur_id)
@@ -205,8 +225,9 @@ if connexion is not None:
     choix = input("Choisissez une option : ")
     if choix == "1":
         creer_compte(connexion)
+        return 
 
-    elif choix == "2":
+    else choix == "2":
         afficher_utilisateurs(connexion)
 
         try :
